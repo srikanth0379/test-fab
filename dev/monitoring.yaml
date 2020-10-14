@@ -1,0 +1,163 @@
+---
+---
+# Source: monitoring/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: helm
+  labels:
+    helm.sh/chart: monitoring-0.1.0
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/instance: monitoring
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+---
+
+# Source: monitoring/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring
+  labels:
+    helm.sh/chart: monitoring-0.1.0
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/instance: monitoring
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/instance: monitoring
+---
+
+# Source: monitoring/templates/grafana-dply.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    helm.sh/chart: monitoring-0.1.0
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/instance: monitoring
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: monitoring
+      app.kubernetes.io/instance: monitoring
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: monitoring
+        app.kubernetes.io/instance: monitoring
+    spec:
+      serviceAccountName: helm
+      securityContext:
+        {}
+      containers:
+        - name: grafana
+          securityContext:
+            {}
+          image: "docker.io/grafana/grafana:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}
+---
+
+# Source: monitoring/templates/prometheus-dply.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  labels:
+    helm.sh/chart: monitoring-0.1.0
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/instance: monitoring
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: monitoring
+      app.kubernetes.io/instance: monitoring
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: monitoring
+        app.kubernetes.io/instance: monitoring
+    spec:
+      serviceAccountName: helm
+      securityContext:
+        {}
+      containers:
+        - name: prometheus
+          securityContext:
+            {}
+          image: "docker.io/prom/prometheus:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9090
+              protocol: TCP
+          volumeMounts:
+            - name: prometheus-server-conf
+              mountPath: /etc/prometheus/
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}
+      volumes:
+        - name: prometheus-server-conf
+          configMap:
+            defaultMode: 420
+            name: prometheus-server-conf
+---
+
+# Source: monitoring/templates/tests/test-connection.yaml #
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "monitoring-test-connection"
+  labels:
+    helm.sh/chart: monitoring-0.1.0
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/instance: monitoring
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['monitoring:80']
+  restartPolicy: Never
+
