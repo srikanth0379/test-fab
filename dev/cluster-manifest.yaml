@@ -5,7 +5,7 @@ metadata:
   name: prometheus-server-conf
   labels:
     name: prometheus
-  namespace: helm
+  namespace: default
 data:
   cpu-usage.rules: |-
     ALERT NodeCPUUsage

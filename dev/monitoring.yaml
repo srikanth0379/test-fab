@@ -140,7 +140,7 @@ spec:
             name: prometheus-server-conf
 ---
 
-# Source: monitoring/templates/tests/test-connection.yaml #
+# Source: monitoring/templates/tests/test-connection.yaml
 apiVersion: v1
 kind: Pod
 metadata:
